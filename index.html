@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Tile(1, 1) automaton</h1>
+
+<input type="file" name="inputfile" id="inputfile">
+<button id="init" onclick="init()">Init</button>
+<button id="start" onclick="start()">Start automaton</button>
+<br>
+<canvas id="myCanvas" width="5000" height="5000" style="border:1px solid grey;" onclick="paint(event)"></canvas>
+
+<script>
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+const shift = 2000;
+const scale = 8;
+const dtime = 0.3;
+var tiles = [];
+
+function init() {
+    inputfile.files[0].text().then(function(text){
+        ctx.fillStyle = "#000000";
+        ctx.lineWidth = 1;
+        const inputfile = document.getElementById("inputfile");
+        tiles = [];
+
+        const lines = text.split("\n"); 
+        for (var i = 0; i < lines.length - 1; i = i + 3) {
+            var tile = {};
+
+            var coordsStr = lines[i];
+            var neighboursStr = lines[i+1];
+            var vertNeighboursStr = lines[i+2];
+            var neighbours = neighboursStr.split(" ");
+            var vertNeighbours = vertNeighboursStr.split(" ");
+            neighbours.pop();
+            vertNeighbours.pop();
+            tile["neighbours"] = neighbours;
+            tile["vertNeighbours"] = vertNeighbours;
+
+            var vertices = [];
+            var verticesStr = coordsStr.split("(");
+            for (var j = 1; j < verticesStr.length; j++) {
+                var x = parseFloat(verticesStr[j]);
+                var y = parseFloat(verticesStr[j].split(",")[1]);
+                vertices.push([x, y]);
+            }
+            tile["vertices"] = vertices;
+            tile["alive"] = false;
+
+            tiles.push(tile);
+        }
+
+        redraw();
+    });
+}
+
+function redraw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (var i = 0; i < tiles.length; i++) {
+        vertices = tiles[i]["vertices"];
+        ctx.beginPath();
+        ctx.moveTo(vertices[0][0]*scale + shift, vertices[0][1]*scale + shift);
+        for (var j = 1; j < vertices.length; j++) {
+            ctx.lineTo(vertices[j][0]*scale + shift, vertices[j][1]*scale + shift);
+        }
+        ctx.closePath();
+        if (tiles[i]["alive"]) {
+            ctx.fill();
+        } else {
+            ctx.stroke();
+        }
+        
+    }
+}
+
+function inside(point, vs) {
+    // ray-casting algorithm based on
+    // https://wrf.ecse.rpi.edu/Research/Short_Notes/pnpoly.html
+    
+    var x = point[0], y = point[1];
+    
+    var inside = false;
+    for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+        var xi = vs[i][0], yi = vs[i][1];
+        var xj = vs[j][0], yj = vs[j][1];
+        
+        var intersect = ((yi > y) != (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    
+    return inside;
+};
+
+function paint(event) {
+    const tileX = (event.offsetX - shift)/scale;
+    const tileY = (event.offsetY - shift)/scale;
+    
+    for (var i = 0; i < tiles.length; i++) {
+        if (inside([tileX, tileY], tiles[i]["vertices"])) {
+            tiles[i]["alive"] = !tiles[i]["alive"];
+            redraw();
+            return;
+        }
+    }
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function numAlive(neighbours) {
+    var num = 0;
+    for (var i = 0; i < neighbours.length; i++) {
+        if (tiles[neighbours[i]]["alive"]) {
+            num++;
+        }
+    }
+    return num;
+} 
+
+async function start() {
+    // THERE ARE RULES
+    while (true) {
+        var newTilesLiveStatus = Array(tiles.length); 
+        for (var i = 0; i < tiles.length; i++) {
+            var numAliveNeighb = numAlive(tiles[i]["neighbours"]);
+            if ((numAliveNeighb < 2) || (numAliveNeighb > 4) || numAliveNeighb == 3) {
+                newTilesLiveStatus[i] = false;
+            } else if ((numAliveNeighb == 2 || numAliveNeighb == 4)) {
+                newTilesLiveStatus[i] = true;
+            } else {
+                newTilesLiveStatus[i] = tiles[i]["alive"];
+            }
+        }
+        for (i = 0; i < tiles.length; i++) {
+            tiles[i]["alive"] = newTilesLiveStatus[i];
+        }
+        redraw();
+        await sleep(dtime*1000);
+    }
+}
+
+</script>
+
+</body>
+</html>
