@@ -1,7 +1,7 @@
 # Tile(1, 1) automaton
-
+![2023-06-25 22-25-59 (online-video-cutter com)](https://github.com/Ankalot/Tile-1-1-Automaton/assets/74981478/646070b1-f7d8-470a-b152-522f5a3ad54d)
 Cellular automaton, but instead of cells there are tiles Tile(1, 1).  
-Took theory and code from this repo: https://github.com/shrx/spectre, and modified it for cellular automaton.  
+Took theory and code from this repo: https://github.com/shrx/spectre, and modified it for cellular automaton. 
 
 # How to use
 1) Run `./compile.bat` (or execute commands manually from it).  
